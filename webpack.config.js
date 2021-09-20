@@ -74,7 +74,7 @@ module.exports = function (env, argv) {
         "src/missing-mb-data/MissingMBData.tsx"
       ),
       playerPage: path.resolve(jsDir, "src/player-pages/PlayerPage.tsx"),
-      siteReports: path.resolve(jsDir, "src/stats/SiteReports.tsx"),
+      siteReports: path.resolve(jsDir, "src/stats/SitewideReports.tsx"),
     },
     output: {
       filename: isProd ? "[name].[contenthash].js" : "[name].js",
