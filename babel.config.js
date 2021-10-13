@@ -17,6 +17,7 @@ module.exports = {
           node: "12",
           browsers: ["> 0.2% and not dead", "firefox >= 44"],
         },
+        modules: false,
       },
     ],
   ],
