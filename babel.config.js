@@ -21,6 +21,7 @@ module.exports = {
     ],
   ],
   plugins: [
+    "lodash",
     [
       "@babel/plugin-transform-typescript",
       {
