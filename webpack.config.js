@@ -13,6 +13,7 @@ const es5LibrariesToTranspile = [
   "d3-scale",
   "internmap",
   "react-date-picker",
+  "lodash",
   "react-calendar",
   "socket.io-client",
   "socket.io-parser",
