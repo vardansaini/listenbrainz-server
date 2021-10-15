@@ -104,5 +104,11 @@ module.exports = function (env, argv) {
       extensions: [".ts", ".tsx", ".js", ".jsx", ".json"],
     },
     plugins,
+    optimization: {
+      runtimeChunk: "single",
+      splitChunks: {
+        chunks: "all",
+      },
+    },
   };
 };
