@@ -32,8 +32,6 @@ def process_listens(app, listens, is_legacy_listen=False):
         with timescale.engine.connect() as connection:
             query = """SELECT recording_msid 
                          FROM listen_join_listen_mbid_mapping lj
-                         JOIN listen_mbid_mapping mbid
-                           ON mbid.id = lj.listen_mbid_mapping
                         WHERE recording_msid IN :msids"""
             curs = connection.execute(sqlalchemy.text(
                 query), msids=tuple(msids.keys()))
