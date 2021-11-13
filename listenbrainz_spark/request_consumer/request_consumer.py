@@ -92,7 +92,7 @@ class RequestConsumer(ConsumerProducerMixin):
                 self.producer.publish(
                     body,
                     exchange=self.result_exchange,
-                    routing_key='',
+                    routing_key="",
                     delivery_mode=2,
                     content_type="application/json",
                     content_encoding="utf-8",
@@ -109,22 +109,26 @@ class RequestConsumer(ConsumerProducerMixin):
         logger.info("Average size of message: {} bytes".format(avg_size_of_message))
 
     def callback(self, message):
-        request = json.loads(message.payload.decode('utf-8'))
-        logger.info('Received a request!')
+        request = json.loads(message.payload.decode("utf-8"))
+        logger.info("Received a request!")
         message.ack()
         messages = self.get_result(request)
         if messages:
             self.push_to_result_queue(messages)
 
-        logger.info('Request done!')
+        logger.info("Request done!")
 
     def get_consumers(self, Consumer, channel):
         return [Consumer(queues=[self.request_queue], callbacks=[self.callback], prefetch_count=1)]
 
 
-if __name__ == '__main__':
+def main(app_name):
+    listenbrainz_spark.init_spark_session(app_name)
+    RequestConsumer().run()
+
+
+if __name__ == "__main__":
     try:
-        listenbrainz_spark.init_spark_session("spark-writer")
-        RequestConsumer().run()
+        main("spark-writer")
     except KeyboardInterrupt:
         pass
