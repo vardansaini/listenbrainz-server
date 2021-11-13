@@ -5,7 +5,7 @@ from time import sleep
 from datetime import datetime
 from typing import List
 
-import pika
+from kombu import Connection
 from py4j.protocol import Py4JJavaError
 from pyspark.sql import DataFrame, functions
 from pyspark.sql.utils import AnalysisException
@@ -57,22 +57,21 @@ def append(df, dest_path):
         raise DataFrameNotAppendedException(err.java_exception, df.schema)
 
 
-def init_rabbitmq(username, password, host, port, vhost, log=logger.error,
-                  heartbeat=None, connection_name="listenbrainz-spark-request-consumer"):
+def init_rabbitmq(username, password, host, port, vhost, heartbeat=0,
+                  connection_name="listenbrainz-spark-request-consumer"):
     while True:
         try:
-            credentials = pika.PlainCredentials(username, password)
-            connection_parameters = pika.ConnectionParameters(
-                host=host,
+            return Connection(
+                hostname=host,
+                userid=username,
                 port=port,
+                password=password,
                 virtual_host=vhost,
-                credentials=credentials,
                 heartbeat=heartbeat,
                 client_properties={"connection_name": connection_name}
             )
-            return pika.BlockingConnection(connection_parameters)
-        except Exception as e:
-            log('Error while connecting to RabbitMQ', exc_info=True)
+        except Exception:
+            logger.error("Error while connecting to RabbitMQ", exc_info=True)
             sleep(1)
 
 
