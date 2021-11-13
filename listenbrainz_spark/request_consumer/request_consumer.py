@@ -108,8 +108,8 @@ class RequestConsumer(ConsumerProducerMixin):
         logger.info("Number of messages sent: {}".format(num_of_messages))
         logger.info("Average size of message: {} bytes".format(avg_size_of_message))
 
-    def callback(self, message):
-        request = json.loads(message.payload.decode("utf-8"))
+    def callback(self, body, message):
+        request = json.loads(body.decode("utf-8"))
         logger.info("Received a request!")
         message.ack()
         messages = self.get_result(request)
