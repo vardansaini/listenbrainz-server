@@ -68,7 +68,7 @@ def init_rabbitmq(username, password, host, port, vhost, heartbeat=0,
                 password=password,
                 virtual_host=vhost,
                 heartbeat=heartbeat,
-                client_properties={"connection_name": connection_name}
+                transport_options={"client_properties": {"connection_name": connection_name}}
             )
         except Exception:
             logger.error("Error while connecting to RabbitMQ", exc_info=True)
