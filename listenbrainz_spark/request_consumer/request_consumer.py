@@ -18,6 +18,7 @@
 
 import json
 import logging
+import time
 
 from kombu import Queue, Exchange
 from kombu.mixins import ConsumerProducerMixin
@@ -83,11 +84,11 @@ class RequestConsumer(ConsumerProducerMixin):
     def push_to_result_queue(self, messages):
         logger.debug("Pushing result to RabbitMQ...")
         num_of_messages = 0
-        avg_size_of_message = 0
+        total_size_of_message = 0
         for message in messages:
             num_of_messages += 1
             body = json.dumps(message)
-            avg_size_of_message += len(body)
+            total_size_of_message += len(body)
             if message:
                 self.producer.publish(
                     body,
@@ -98,24 +99,23 @@ class RequestConsumer(ConsumerProducerMixin):
                     content_encoding="utf-8",
                 )
 
-        try:
-            avg_size_of_message //= num_of_messages
-        except ZeroDivisionError:
+        if num_of_messages:
+            avg_size_of_message = total_size_of_message // num_of_messages
+        else:
             avg_size_of_message = 0
-            logger.warning("No messages calculated", exc_info=True)
+            logger.warning("No messages calculated")
 
         logger.info("Done!")
-        logger.info("Number of messages sent: {}".format(num_of_messages))
-        logger.info("Average size of message: {} bytes".format(avg_size_of_message))
+        logger.info("Number of messages sent: %d", num_of_messages)
+        logger.info("Average size of message: %d bytes", avg_size_of_message)
 
     def callback(self, body, message):
         request = json.loads(body)
         logger.info("Received a request!")
-        message.ack()
         messages = self.get_result(request)
         if messages:
             self.push_to_result_queue(messages)
-
+        message.ack()
         logger.info("Request done!")
 
     def get_consumers(self, Consumer, channel):
@@ -124,7 +124,12 @@ class RequestConsumer(ConsumerProducerMixin):
 
 def main(app_name):
     listenbrainz_spark.init_spark_session(app_name)
-    RequestConsumer().run()
+    while True:
+        try:
+            RequestConsumer().run()
+        except Exception:
+            logger.error("Error in the request consumer:", exc_info=True)
+            time.sleep(5)
 
 
 if __name__ == "__main__":
