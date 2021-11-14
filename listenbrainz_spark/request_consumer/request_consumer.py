@@ -20,8 +20,11 @@ import json
 import logging
 import time
 
+from queue import Queue as qq
+
 from kombu import Queue, Exchange
 from kombu.mixins import ConsumerProducerMixin
+from threading import Thread
 
 import listenbrainz_spark
 import listenbrainz_spark.query_map
@@ -47,6 +50,21 @@ class RequestConsumer(ConsumerProducerMixin):
         self.request_queue = Queue(config.SPARK_REQUEST_QUEUE, self.request_exchange)
         self.result_exchange = Exchange(config.SPARK_RESULT_EXCHANGE, type="fanout", durable=False)
         self.result_queue = Queue(config.SPARK_RESULT_QUEUE, self.result_exchange)
+        self.task_queue = qq()
+        Thread(target=self.calculate_results).start()
+
+    def calculate_results(self):
+        while True:
+            try:
+                body, message = self.task_queue.get()
+                request = json.loads(body)
+                results = self.get_result(request)
+                if results:
+                    self.push_to_result_queue(results)
+                message.ack()
+                logger.info("Request done!")
+            except Exception:
+                logger.error("Error while calculating results:", exc_info=True)
 
     def get_result(self, request):
         try:
@@ -110,13 +128,9 @@ class RequestConsumer(ConsumerProducerMixin):
         logger.info("Average size of message: %d bytes", avg_size_of_message)
 
     def callback(self, body, message):
-        request = json.loads(body)
         logger.info("Received a request!")
-        message.ack()
-        messages = self.get_result(request)
-        if messages:
-            self.push_to_result_queue(messages)
-        logger.info("Request done!")
+        self.task_queue.put((body, message))
+        logger.info("Request put in internal queue!")
 
     def get_consumers(self, Consumer, channel):
         return [Consumer(queues=[self.request_queue], callbacks=[self.callback], prefetch_count=1)]
