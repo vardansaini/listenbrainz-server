@@ -126,6 +126,7 @@ def main(app_name):
     listenbrainz_spark.init_spark_session(app_name)
     while True:
         try:
+            logger.info("Starting Request Consumer!")
             RequestConsumer().run()
         except Exception:
             logger.error("Error in the request consumer:", exc_info=True)
