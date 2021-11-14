@@ -112,10 +112,10 @@ class RequestConsumer(ConsumerProducerMixin):
     def callback(self, body, message):
         request = json.loads(body)
         logger.info("Received a request!")
+        message.ack()
         messages = self.get_result(request)
         if messages:
             self.push_to_result_queue(messages)
-        message.ack()
         logger.info("Request done!")
 
     def get_consumers(self, Consumer, channel):
