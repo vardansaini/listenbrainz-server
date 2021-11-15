@@ -33,6 +33,7 @@ from listenbrainz_spark.utils import init_rabbitmq
 
 RABBITMQ_HEARTBEAT_TIME = 2 * 60 * 60  # 2 hours -- a full dump import takes 40 minutes right now
 logger = logging.getLogger(__name__)
+logging.getLogger("amqp").setLevel(logging.DEBUG)
 
 
 class RequestConsumer(ConsumerProducerMixin):
