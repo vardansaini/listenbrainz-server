@@ -12,10 +12,6 @@ from listenbrainz.websockets.listens_dispatcher import ListensDispatcher
 eventlet.monkey_patch()
 
 app = gen_app()
-app.init_loggers(
-    file_config=app.config.get('LOG_FILE'),
-    sentry_config=app.config.get('LOG_SENTRY')
-)
 
 socketio = SocketIO(app, cors_allowed_origins='*', logger=True, engineio_logger=True)
 

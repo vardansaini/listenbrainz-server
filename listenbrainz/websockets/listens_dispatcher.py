@@ -1,9 +1,8 @@
 import json
 import time
 
+import sentry_sdk
 from kombu.mixins import ConsumerMixin
-
-import ujson
 
 from listenbrainz.listen import Listen, NowPlayingListen
 from listenbrainz.utils import get_fallback_connection_name
@@ -74,6 +73,10 @@ class ListensDispatcher(ConsumerMixin):
                 except KeyboardInterrupt:
                     self.app.logger.error("Keyboard interrupt!")
                     break
-                except Exception:
+                except Exception as e:
                     self.app.logger.error("Error in PlayerWriter:", exc_info=True)
+                    # sentry sometimes does not (never?) reports handled errors. In particular,
+                    # I found logs for exception captured by this except block in container logs
+                    # but not in sentry so added the manual capture_exception here.
+                    sentry_sdk.capture_exception(e)
                     time.sleep(3)
