@@ -28,19 +28,4 @@ class MessyBrainzTestCase(unittest.TestCase):
 
     def setUp(self):
         init_db_connection(config.MESSYBRAINZ_SQLALCHEMY_DATABASE_URI)
-        self.drop_tables()
-        self.init_db()
-
-    def tearDown(self):
-        pass
-        # dropping the tables in tearDown is causing API tests to fail
-        # self.drop_tables()
-
-    def init_db(self):
-        run_sql_script(os.path.join(ADMIN_SQL_DIR, 'create_tables.sql'))
-        run_sql_script(os.path.join(ADMIN_SQL_DIR, 'create_primary_keys.sql'))
-        run_sql_script(os.path.join(ADMIN_SQL_DIR, 'create_foreign_keys.sql'))
-        run_sql_script(os.path.join(ADMIN_SQL_DIR, 'create_indexes.sql'))
-
-    def drop_tables(self):
-        run_sql_script(os.path.join(ADMIN_SQL_DIR, 'drop_tables.sql'))
+        run_sql_script(os.path.join(ADMIN_SQL_DIR, 'truncate_tables.sql'))
