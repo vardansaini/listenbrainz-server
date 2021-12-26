@@ -193,9 +193,17 @@ export default class LastFmImporter extends React.Component<
             data.recenttracks.track[0].date.uts,
             this.maxTimestampForImport
           );
+          // eslint-disable-next-line no-console
+          console.log(
+            `Recent Track Date timestamp: ${data.recenttracks.track[0].date.uts}`
+          );
         } else {
           this.maxTimestampForImport = Math.floor(Date.now() / 1000);
+          // eslint-disable-next-line no-console
+          console.log("No date in recent tracks");
         }
+        // eslint-disable-next-line no-console
+        console.log(`Max timestamp for import: ${this.maxTimestampForImport}`);
 
         // Encode the page so that it can be submitted
         const payload = LastFmImporter.encodeScrobbles(data, service);
@@ -204,6 +212,8 @@ export default class LastFmImporter extends React.Component<
       }
       // Retry if we receive a 5xx server error
       if (/^5/.test(response.status.toString())) {
+        // eslint-disable-next-line no-console
+        console.log(`Error: ${response.toString()}`);
         throw new Error(`Status ${response.status}`);
       }
     } catch (err) {
@@ -316,6 +326,8 @@ export default class LastFmImporter extends React.Component<
 
   async submitPage(payload: Array<Listen>) {
     const delay = this.getRateLimitDelay();
+    // eslint-disable-next-line no-console
+    console.log(`Rate Limit Delay: ${delay}`);
     // Halt execution for some time
     await new Promise((resolve) => {
       setTimeout(resolve, delay);
@@ -398,9 +410,15 @@ export default class LastFmImporter extends React.Component<
         this.userName,
         service
       );
+      // eslint-disable-next-line no-console
+      console.log(`Latest Import Time: ${this.latestImportTime}`);
       this.incrementalImport = this.latestImportTime > 0;
       this.playCount = await this.getTotalNumberOfScrobbles();
+      // eslint-disable-next-line no-console
+      console.log(`Total Number of Scrobbles: ${this.playCount}`);
       this.totalPages = await this.getNumberOfPages();
+      // eslint-disable-next-line no-console
+      console.log(`Total Number of Pages: ${this.totalPages}`);
       this.userIsPrivate = await this.getUserPrivacy();
       this.page = this.totalPages; // Start from the last page so that oldest scrobbles are imported first
 

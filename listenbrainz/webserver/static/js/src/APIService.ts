@@ -261,6 +261,8 @@ export default class APIService {
           },
           body: JSON.stringify(struct),
         });
+        // eslint-disable-next-line no-console
+        console.log(`Response status: ${response.status}`);
         // we skip listens if we get an error code that's not a rate limit
         if (response.status !== 429) {
           return response; // Return response so that caller can handle appropriately
