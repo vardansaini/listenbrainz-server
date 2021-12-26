@@ -394,8 +394,7 @@ def latest_import():
         try:
             last_import_ts = listens_importer.get_latest_listened_at(user["id"], service)
             last_import_ts = 0 if not last_import_ts else int(last_import_ts.strftime('%s'))
-            if ts > last_import_ts:
-                listens_importer.update_latest_listened_at(user["id"], service, ts)
+            listens_importer.update_latest_listened_at(user["id"], service, ts)
         except DatabaseException:
             current_app.logger.error("Error while updating latest import: ", exc_info=True)
             raise APIInternalServerError('Could not update latest_import, try again')
