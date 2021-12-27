@@ -3,6 +3,8 @@ import listenbrainz.db.user as db_user
 import listenbrainz.db.feedback as db_feedback
 
 from flask import Blueprint, current_app, jsonify, request
+
+from listenbrainz.domain import lastfm
 from listenbrainz.webserver.decorators import crossdomain
 from listenbrainz.webserver.errors import (APIBadRequest,
                                            APIInternalServerError, APINotFound,
@@ -209,3 +211,25 @@ def get_feedback_for_recordings_for_user(user_name):
     return jsonify({
         "feedback": feedback,
     })
+
+
+@feedback_api_bp.route("/feedback/import", methods=["POST", "OPTIONS"])
+@crossdomain()
+@ratelimit()
+def import_feedback_from_lastfm():
+    """
+    Import feedback from external service.
+    """
+    user = validate_auth_header()
+    data = request.json
+
+    if "service" not in data:
+        raise APIBadRequest("missing service")
+    if "user_name" not in data:
+        raise APIBadRequest("missing last.fm user name")
+
+    if data["service"] == "lastfm":
+        received, total = lastfm.import_feedback(user["id"], data["user_name"])
+        return jsonify({"total": total, "received": received})
+
+    return jsonify({"status": "ok"})
