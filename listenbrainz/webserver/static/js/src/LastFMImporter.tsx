@@ -551,6 +551,12 @@ export default class LastFmImporter extends React.Component<
     this.rlOrigin = new Date().getTime() / 1000;
   }
 
+  progressBarPercentage() {
+    if (this.totalPages >= this.numCompleted)
+      return Math.ceil((this.numCompleted / this.totalPages) * 100);
+    return 50;
+  }
+
   async submitPage(payload: Array<Listen>) {
     const delay = this.getRateLimitDelay();
     // Halt execution for some time
@@ -564,12 +570,6 @@ export default class LastFmImporter extends React.Component<
       payload
     );
     this.updateRateLimitParameters(response);
-  }
-
-  progressBarPercentage() {
-    if (this.totalPages >= this.numCompleted)
-      return Math.ceil((this.numCompleted / this.totalPages) * 100);
-    return 50;
   }
 
   render() {
