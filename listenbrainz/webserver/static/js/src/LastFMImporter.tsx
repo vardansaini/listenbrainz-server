@@ -657,6 +657,9 @@ export default class LastFmImporter extends React.Component<
             type="file"
             onSubmit={this.handleSpotifyImport}
           />
+          <button className="btn btn-success" type="submit">
+            Import Now!
+          </button>
         </form>
       </div>
     );
