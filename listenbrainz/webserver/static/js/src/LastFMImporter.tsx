@@ -308,12 +308,6 @@ export default class LastFmImporter extends React.Component<
     this.startImport();
   };
 
-  progressBarPercentage() {
-    if (this.totalPages >= this.numCompleted)
-      return Math.ceil((this.numCompleted / this.totalPages) * 100);
-    return 50;
-  }
-
   async submitPage(payload: Array<Listen>) {
     const delay = this.getRateLimitDelay();
     // Halt execution for some time
@@ -570,6 +564,12 @@ export default class LastFmImporter extends React.Component<
     }
     fr.readAsText(event.target.files[0]);
   };
+
+  progressBarPercentage() {
+    if (this.totalPages >= this.numCompleted)
+      return Math.ceil((this.numCompleted / this.totalPages) * 100);
+    return 50;
+  }
 
   render() {
     const { show, canClose, lastfmUsername, msg, service } = this.state;
