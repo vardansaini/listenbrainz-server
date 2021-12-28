@@ -326,9 +326,8 @@ export default class LastFmImporter extends React.Component<
           },
         } as Listen;
       });
-    const { currentUser } = this.context;
     await this.APIService.submitListens(
-      currentUser.userToken,
+      this.userToken,
       "import",
       listens
     );
