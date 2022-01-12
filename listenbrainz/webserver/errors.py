@@ -166,6 +166,7 @@ def init_error_handlers(app):
         return handle_error(error, 429)
 
     @app.errorhandler(500)
+    @crossdomain()
     def internal_server_error(error):
         # This error handler gets triggered on any uncaught exception.
         # `error` is always InternalServerError, and error.original_exception
