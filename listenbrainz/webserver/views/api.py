@@ -123,6 +123,7 @@ def get_listens(user_name):
     :statuscode 404: The requested user was not found.
     :resheader Content-Type: *application/json*
     """
+    raise ValueError("Ignore me ;)")
     db_conn = webserver.create_timescale(current_app)
 
     user = db_user.get_by_mb_id(user_name)
