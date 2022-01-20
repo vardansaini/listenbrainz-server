@@ -170,7 +170,6 @@ class UserTimelineEventDatabaseTestCase(DatabaseTestCase):
             )
         )
 
-        time.sleep(3)
         new_user = db_user.get_or_create(4, 'new_user')
         db_user_timeline_event.create_user_track_recommendation_event(
             user_id=new_user['id'],

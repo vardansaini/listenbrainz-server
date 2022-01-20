@@ -120,10 +120,8 @@ class UserRelationshipTestCase(DatabaseTestCase):
         db_user_relationship.insert(self.main_user['id'], self.followed_user_1['id'], 'follow')
         db_user_relationship.insert(self.main_user['id'], self.followed_user_2['id'], 'follow')
 
-        time.sleep(3)
         new_user = db_user.get_or_create(4, 'new_user')
         db_user_relationship.insert(self.followed_user_1['id'], new_user['id'], 'follow')
-
 
         # max_ts is too low, won't return anything
         events = db_user_relationship.get_follow_events(
