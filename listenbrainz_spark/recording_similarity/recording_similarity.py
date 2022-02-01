@@ -38,7 +38,6 @@ def calculate(window_size: int, similarity_threshold: float, time_threshold: int
             ), symmetric_index AS (
                 SELECT CASE WHEN mbid0 < mbid1 THEN mbid0 ELSE mbid1 END AS lexical_mbid0
                      , CASE WHEN mbid0 > mbid1 THEN mbid0 ELSE mbid1 END AS lexical_mbid1
-                     , similar
                   FROM mbid_similarity
                  WHERE mbid0 IS NOT NULL
                    AND mbid1 IS NOT NULL
@@ -46,7 +45,7 @@ def calculate(window_size: int, similarity_threshold: float, time_threshold: int
             )
             SELECT lexical_mbid0 AS mbid0
                  , lexical_mbid1 AS mbid1
-                 , SUM(CASE WHEN similar THEN 1 ELSE 0 END) * {weight} AS similarity
+                 , COUNT(*) * {weight} AS similarity
               FROM symmetric_index
           GROUP BY lexical_mbid0, lexical_mbid1
         """
