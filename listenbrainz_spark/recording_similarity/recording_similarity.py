@@ -42,11 +42,11 @@ def calculate():
              WHERE mbid0 IS NOT NULL
                AND mbid1 IS NOT NULL
           GROUP BY mbid0, mbid1
+            HAVING similarity > 0.0
         """
         scattered_df = scattered_df.unionAll(run_query(query))
         weight -= DECREMENT
-        logger.info("Scattered Count: %d", scattered_df.count())
-        logger.info("Scattered Sample: %s", list(scattered_df.take(5)))
+        logger.info("Count after iteration %d: %d", idx + 1, scattered_df.count())
 
     rec_sim_table = "recording_similarity_index_scattered"
     scattered_df.createOrReplaceTempView(rec_sim_table)
@@ -66,5 +66,4 @@ def calculate():
     """
     rec_sim_index_df = run_query(rec_sim_query)
     logger.info("Index Count: %d", rec_sim_index_df.count())
-    logger.info("Index Sample: %s", list(rec_sim_index_df.take(5)))
     rec_sim_index_df.write.csv("/recording_similarity_index")
