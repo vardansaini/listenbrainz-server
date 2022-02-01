@@ -2,6 +2,7 @@ from calendar import monthrange
 from datetime import datetime, time, date
 from typing import Tuple
 
+import pyspark.sql
 from dateutil.relativedelta import relativedelta, MO
 
 import listenbrainz_spark
@@ -15,7 +16,7 @@ from listenbrainz_spark.utils import get_latest_listen_ts
 SITEWIDE_STATS_ENTITY_LIMIT = 1000  # number of top artists to retain in sitewide stats
 
 
-def run_query(query):
+def run_query(query) -> pyspark.sql.DataFrame:
     """ Returns dataframe that results from running the query.
 
         Args:

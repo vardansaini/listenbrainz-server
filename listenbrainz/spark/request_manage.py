@@ -346,6 +346,12 @@ def request_year_in_music(ctx, year: int):
     ctx.invoke(request_yim_similar_users, year=year)
 
 
+@cli.command(name='request_build_similarity_index')
+def request_build_similarity_index():
+    """ Send the spark cluster a request to build recording similarity index """
+    send_request_to_spark_cluster("build_recording_similarity_index")
+
+
 # Some useful commands to keep our crontabs manageable. These commands do not add new functionality
 # rather combine multiple commands related to a task so that they are always invoked in the correct order.
 

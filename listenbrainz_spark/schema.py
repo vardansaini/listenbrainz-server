@@ -1,8 +1,7 @@
 from datetime import datetime
 from pyspark.sql import Row
 from pyspark.sql.types import StructField, StructType, ArrayType, StringType, TimestampType, FloatType, \
-    IntegerType, LongType
-
+    IntegerType, LongType, DoubleType
 
 listens_new_schema = StructType([
     StructField('listened_at', TimestampType(), nullable=False),
@@ -14,6 +13,12 @@ listens_new_schema = StructType([
     StructField('recording_name', StringType(), nullable=False),
     StructField('recording_mbid', StringType(), nullable=True),
     StructField('artist_credit_mbids', ArrayType(StringType()), nullable=True),
+])
+
+recording_similarity_index_schema = StructType([
+    StructField('mbid0', StringType(), nullable=False),
+    StructField('mbid1', StringType(), nullable=False),
+    StructField('similarity', DoubleType(), nullable=False),
 ])
 
 
