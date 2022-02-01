@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 
 import pyspark.sql
@@ -11,6 +12,8 @@ from listenbrainz_spark.utils import get_listens_from_new_dump
 LOOKAHEAD_STEPS = 5
 DECREMENT = 1.0 / LOOKAHEAD_STEPS
 SIMILARITY_THRESHOLD = 10.0
+
+logger = logging.getLogger(__name__)
 
 
 def calculate():
@@ -42,6 +45,8 @@ def calculate():
         """
         scattered_df.unionAll(run_query(query))
         weight -= DECREMENT
+        logger.info("Scattered Count: %d", scattered_df.count())
+        logger.info("Scattered Sample: %d", scattered_df.take(5))
 
     rec_sim_table = "recording_similarity_index_scattered"
     scattered_df.createOrReplaceTempView(rec_sim_table)
@@ -59,4 +64,7 @@ def calculate():
           GROUP BY lexical_mbid0, lexical_mbid1
             HAVING SUM(similarity) > {SIMILARITY_THRESHOLD}       
     """
-    run_query(rec_sim_query).write.csv("/recording_similarity_index")
+    rec_sim_index_df = run_query(rec_sim_query)
+    logger.info("Index Count: %d", rec_sim_index_df.count())
+    logger.info("Index Sample: %d", rec_sim_index_df.take(5))
+    rec_sim_index_df.write.csv("/recording_similarity_index")
