@@ -346,10 +346,14 @@ def request_year_in_music(ctx, year: int):
     ctx.invoke(request_yim_similar_users, year=year)
 
 
-@cli.command(name='request_build_similarity_index')
-def request_build_similarity_index():
+@cli.command(name="request_build_similarity_index")
+@click.option("--window-size", type=int, help="Number of consecutive listens to consider for similarity")
+@click.option("--similarity-threshold", type=float, help="Similarity threshold to consider two recordings similar in final index")
+@click.option("--time-threshold", type=int, help="Max time between two listens to be considered similar")
+def request_build_similarity_index(window_size: int, similarity_threshold: float, time_threshold: int):
     """ Send the spark cluster a request to build recording similarity index """
-    send_request_to_spark_cluster("build_recording_similarity_index")
+    send_request_to_spark_cluster("build_recording_similarity_index", window_size=window_size,
+                                  similarity_threshold=similarity_threshold, time_threshold=time_threshold)
 
 
 # Some useful commands to keep our crontabs manageable. These commands do not add new functionality

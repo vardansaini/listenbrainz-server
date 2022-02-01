@@ -137,7 +137,7 @@
   },
   "build_recording_similarity_index": {
     "name": "build_recording_similarity_index",
-    "description": "Recording Similarity Index",
-    "params": []
+    "description": "Build the Recording Similarity Index",
+    "params": ["window_size", "similarity_threshold", "time_threshold"]
   }
 }
