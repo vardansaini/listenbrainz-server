@@ -38,6 +38,7 @@ def calculate():
               FROM mbid_similarity
              WHERE mbid0 IS NOT NULL
                AND mbid1 IS NOT NULL
+          GROUP BY mbid0, mbid1
         """
         scattered_df.unionAll(run_query(query))
         weight -= DECREMENT
@@ -55,7 +56,7 @@ def calculate():
                  , lexical_mbid1 AS mbid1
                  , SUM(similarity) AS total_similarity
               FROM symmetric_index
-          GROUP BY symmetric_index
+          GROUP BY lexical_mbid0, lexical_mbid1
             HAVING SUM(similarity) > {SIMILARITY_THRESHOLD}       
     """
     run_query(rec_sim_query).write.csv("/recording_similarity_index")
