@@ -30,7 +30,7 @@ def calculate(window_size: int, similarity_threshold: float, time_threshold: int
                      , LEAD(recording_mbid, {idx}) OVER row_next AS mbid1
                      ,    ( artist_credit_id != LEAD(artist_credit_id, {idx}) OVER row_next 
                         AND recording_mbid != LEAD(recording_mbid, {idx}) OVER row_next
-                        AND LEAD(listened_at, {idx}) OVER row_next - listened_at <= {time_threshold}
+                        AND (LEAD(listened_at, {idx}) OVER row_next) - listened_at <= {time_threshold}
                        ) AS similar
                   FROM {table}
                  WHERE recording_mbid IS NOT NULL 
