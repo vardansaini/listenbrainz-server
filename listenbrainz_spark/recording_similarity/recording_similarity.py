@@ -23,7 +23,7 @@ def calculate(window_size: int, similarity_threshold: float, time_threshold: int
     scattered_df: pyspark.sql.DataFrame = listenbrainz_spark.session.createDataFrame([], recording_similarity_index_schema)
 
     weight = 1.0
-    for idx in range(window_size):
+    for idx in range(1, window_size + 1):
         query = f"""
             WITH mbid_similarity AS (
                 SELECT recording_mbid AS mbid0
