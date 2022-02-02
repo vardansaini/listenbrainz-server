@@ -49,7 +49,7 @@ def calculate(window_size: int, similarity_threshold: float, time_threshold: int
               FROM symmetric_index
           GROUP BY lexical_mbid0, lexical_mbid1
         """
-        scattered_df = scattered_df.unionAll(run_query(query))
+        scattered_df = scattered_df.union(run_query(query))
         weight -= decrement
         logger.info("Count after iteration %d: %d", idx + 1, scattered_df.count())
 
