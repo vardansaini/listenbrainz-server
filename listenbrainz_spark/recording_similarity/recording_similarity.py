@@ -28,8 +28,7 @@ def calculate(window_size: int, similarity_threshold: float, time_threshold: int
             WITH mbid_similarity AS (
                 SELECT recording_mbid AS mbid0
                      , LEAD(recording_mbid, {idx}) OVER row_next AS mbid1
-                     ,    ( artist_credit_id != LEAD(artist_credit_id, {idx}) OVER row_next 
-                        AND recording_mbid != LEAD(recording_mbid, {idx}) OVER row_next
+                     ,    ( recording_mbid != LEAD(recording_mbid, {idx}) OVER row_next
                         -- spark-sql supports interval types but pyspark doesn't so currently need to convert to bigints
                         AND BIGINT(LEAD(listened_at, {idx}) OVER row_next) - BIGINT(listened_at) <= {time_threshold}
                        ) AS similar
