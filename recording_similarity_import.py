@@ -33,3 +33,7 @@ def import_recording_similarity():
                         execute_values(mb_curs, query, values, template)
 
                 mb_conn.commit()
+
+
+if __name__ == '__main__':
+    import_recording_similarity()
