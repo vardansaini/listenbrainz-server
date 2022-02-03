@@ -51,7 +51,7 @@ def calculate(window_size: int, similarity_threshold: float, time_threshold: int
         """
         scattered_df = scattered_df.union(run_query(query))
         weight -= decrement
-        logger.info("Count after iteration %d: %d", idx + 1, scattered_df.count())
+        logger.info("Count after iteration %d: %d", idx, scattered_df.count())
 
     rec_sim_table = "recording_similarity_index_scattered"
     scattered_df.createOrReplaceTempView(rec_sim_table)
@@ -65,4 +65,4 @@ def calculate(window_size: int, similarity_threshold: float, time_threshold: int
     """
     rec_sim_index_df = run_query(rec_sim_query)
     logger.info("Index Count: %d", rec_sim_index_df.count())
-    rec_sim_index_df.write.csv(f"/recording_similarity_index/{window_size}/")
+    rec_sim_index_df.write.csv(f"/recording_similarity_index/{window_size}/", mode="overwrite")
