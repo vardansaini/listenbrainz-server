@@ -17,7 +17,8 @@ import listenbrainz_spark.year_in_music.most_listened_year
 import listenbrainz_spark.year_in_music.top_stats
 import listenbrainz_spark.year_in_music.listens_per_day
 import listenbrainz_spark.year_in_music.listen_count
-import listenbrainz_spark.recording_similarity.recording_similarity
+import listenbrainz_spark.listen_similarity.recording_similarity
+import listenbrainz_spark.listen_similarity.artist_similarity
 
 functions = {
     'stats.user.entity': listenbrainz_spark.stats.user.entity.get_entity_stats,
@@ -45,7 +46,8 @@ functions = {
     'year_in_music.top_stats': listenbrainz_spark.year_in_music.top_stats.calculate_top_entity_stats,
     'year_in_music.listens_per_day': listenbrainz_spark.year_in_music.listens_per_day.calculate_listens_per_day,
     'year_in_music.listen_count': listenbrainz_spark.year_in_music.listen_count.get_listen_count,
-    'build_recording_similarity_index': listenbrainz_spark.recording_similarity.recording_similarity.calculate,
+    'build_recording_similarity_index': listenbrainz_spark.listen_similarity.recording_similarity.calculate,
+    'build_artist_similarity_index': listenbrainz_spark.listen_similarity.artist_similarity.calculate,
 }
 
 

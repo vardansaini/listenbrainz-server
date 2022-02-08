@@ -350,9 +350,10 @@ def request_year_in_music(ctx, year: int):
 @click.option("--window-size", type=int, help="Number of consecutive listens to consider for similarity", required=True)
 @click.option("--similarity-threshold", type=float, help="Similarity threshold to consider two recordings similar in final index", required=True)
 @click.option("--time-threshold", type=int, help="Max time between two listens to be considered similar", required=True)
-def request_build_similarity_index(window_size: int, similarity_threshold: float, time_threshold: int):
+@click.option("--entity", type=click.Choice(["recording", "artist"]), help="Whether to build recording or artist similarity index", required=True)
+def request_build_similarity_index(window_size: int, similarity_threshold: float, time_threshold: int, entity: str):
     """ Send the spark cluster a request to build recording similarity index """
-    send_request_to_spark_cluster("build_recording_similarity_index", window_size=window_size,
+    send_request_to_spark_cluster(f"build_{entity}_similarity_index", window_size=window_size,
                                   similarity_threshold=similarity_threshold, time_threshold=time_threshold)
 
 

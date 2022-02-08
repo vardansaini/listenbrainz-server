@@ -139,5 +139,10 @@
     "name": "build_recording_similarity_index",
     "description": "Build the Recording Similarity Index",
     "params": ["window_size", "similarity_threshold", "time_threshold"]
+  },
+  "build_artist_similarity_index": {
+    "name": "build_artist_similarity_index",
+    "description": "Build the Artist Similarity Index",
+    "params": ["window_size", "similarity_threshold", "time_threshold"]
   }
 }
