@@ -22,6 +22,7 @@ def calculate(window_size: int, similarity_threshold: float, time_threshold: int
     
     explode_artist_mbid_query = f"""
         SELECT user_id
+             , listened_at
              , artist_credit_id
              , explode(artist_credit_mbids) AS artist_mbid
           FROM {base_table}
