@@ -24,7 +24,7 @@ def calculate(window_size: int, similarity_threshold: float, time_threshold: int
         SELECT user_id
              , listened_at
              , artist_credit_id
-             , explode(artist_credit_mbids) AS artist_mbid
+             , artist_credit_mbids
           FROM {base_table}
          WHERE artist_credit_id IS NOT NULL 
     """
@@ -36,23 +36,32 @@ def calculate(window_size: int, similarity_threshold: float, time_threshold: int
     weight = 1.0
     for idx in range(1, window_size + 1):
         query = f"""
-            WITH mbid_similarity AS (
-                SELECT artist_mbid AS mbid0
-                     , LEAD(artist_mbid, {idx}) OVER row_next AS mbid1
+            WITH artist_credit_similarity AS (
+                SELECT artist_credit_mbids AS mbids_0
+                     , LEAD(artist_credit_mbids, {idx}) OVER row_next AS mbids_1
                      ,    ( artist_credit_id != LEAD(artist_credit_id, {idx}) OVER row_next
-                        AND artist_mbid != LEAD(artist_mbid, {idx}) OVER row_next
                         -- spark-sql supports interval types but pyspark doesn't so currently need to convert to bigints
                         AND BIGINT(LEAD(listened_at, {idx}) OVER row_next) - BIGINT(listened_at) <= {time_threshold}
                        ) AS similar
                   FROM {table}
                 WINDOW row_next AS (PARTITION BY user_id ORDER BY listened_at)
+            ), explode_1_mbid AS (  -- cannot explode two columns in 1 step so split into 2.
+                SELECT explode(mbids_0) AS  mbid0
+                     , mbids_1
+                  FROM artist_credit_similarity
+                 WHERE similar  -- trimming the list as soon as possible, no need to explode non-similar artist-mbids
+            ), mbid_similarity AS (
+                SELECT mbid0
+                     , explode(mbids_1) AS mbid1
+                  FROM explode_1_mbid
             ), symmetric_index AS (
                 SELECT CASE WHEN mbid0 < mbid1 THEN mbid0 ELSE mbid1 END AS lexical_mbid0
                      , CASE WHEN mbid0 > mbid1 THEN mbid0 ELSE mbid1 END AS lexical_mbid1
                   FROM mbid_similarity
                  WHERE mbid0 IS NOT NULL
                    AND mbid1 IS NOT NULL
-                   AND similar
+                   AND mbid0 != mbid1 -- due to partial artist credit match, the same mbid can occur in both columns for
+                   -- a row. ignore these rows.
             )
             SELECT lexical_mbid0 AS mbid0
                  , lexical_mbid1 AS mbid1
