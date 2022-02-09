@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 def calculate(window_size: int, similarity_threshold: float, time_threshold: int):
     decrement = 1.0 / window_size
 
-    from_date, to_date = datetime(LAST_FM_FOUNDING_YEAR, 1, 1), datetime.now()
+    from_date, to_date = datetime(2017, 1, 1), datetime.now()
     listens_df = get_listens_from_new_dump(from_date, to_date)
     base_table = "artist_sim_listens_base"
     listens_df.createOrReplaceTempView(base_table)
