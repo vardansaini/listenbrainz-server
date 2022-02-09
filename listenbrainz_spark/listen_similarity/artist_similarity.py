@@ -17,19 +17,8 @@ def calculate(window_size: int, similarity_threshold: float, time_threshold: int
 
     from_date, to_date = datetime(2017, 1, 1), datetime.now()
     listens_df = get_listens_from_new_dump(from_date, to_date)
-    base_table = "artist_sim_listens_base"
-    listens_df.createOrReplaceTempView(base_table)
-    
-    explode_artist_mbid_query = f"""
-        SELECT user_id
-             , listened_at
-             , artist_credit_id
-             , artist_credit_mbids
-          FROM {base_table}
-         WHERE artist_credit_id IS NOT NULL 
-    """
     table = "artist_sim_listens"
-    run_query(explode_artist_mbid_query).createOrReplaceTempView(table)
+    listens_df.createOrReplaceTempView(table)
 
     scattered_df: pyspark.sql.DataFrame = listenbrainz_spark.session.createDataFrame([], recording_similarity_index_schema)
 
@@ -39,11 +28,9 @@ def calculate(window_size: int, similarity_threshold: float, time_threshold: int
             WITH artist_credit_similarity AS (
                 SELECT artist_credit_mbids AS mbids_0
                      , LEAD(artist_credit_mbids, {idx}) OVER row_next AS mbids_1
-                     ,    ( artist_credit_id != LEAD(artist_credit_id, {idx}) OVER row_next
-                        -- spark-sql supports interval types but pyspark doesn't so currently need to convert to bigints
-                        -- AND BIGINT(LEAD(listened_at, {idx}) OVER row_next) - BIGINT(listened_at) <= {time_threshold}
-                       ) AS similar
+                     , artist_credit_id != LEAD(artist_credit_id, {idx}) OVER row_next AS similar
                   FROM {table}
+                 WHERE artist_credit_id IS NOT NULL   
                 WINDOW row_next AS (PARTITION BY user_id ORDER BY listened_at)
             ), explode_1_mbid AS (  -- cannot explode two columns in 1 step so split into 2.
                 SELECT explode(mbids_0) AS  mbid0
@@ -60,7 +47,8 @@ def calculate(window_size: int, similarity_threshold: float, time_threshold: int
                   FROM mbid_similarity
                  WHERE mbid0 IS NOT NULL
                    AND mbid1 IS NOT NULL
-                   AND mbid0 != mbid1 -- due to partial artist credit match, the same mbid can occur in both columns for
+                   AND mbid0 != mbid1
+                   -- due to partial artist credit match, the same mbid can occur in both columns for
                    -- a row. ignore these rows.
             )
             SELECT lexical_mbid0 AS mbid0
