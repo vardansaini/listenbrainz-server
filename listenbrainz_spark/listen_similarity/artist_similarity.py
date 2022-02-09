@@ -15,10 +15,11 @@ logger = logging.getLogger(__name__)
 def calculate(window_size: int, similarity_threshold: float, time_threshold: int):
     decrement = 1.0 / window_size
 
-    from_date, to_date = datetime(2017, 1, 1), datetime.now()
+    from_date, to_date = datetime(2017, 1, 1), datetime(2022, 2, 9)
     listens_df = get_listens_from_new_dump(from_date, to_date)
     table = "artist_sim_listens"
     listens_df.createOrReplaceTempView(table)
+    logger.info("Total listen count: %d", listens_df.count())
 
     scattered_df: pyspark.sql.DataFrame = listenbrainz_spark.session.createDataFrame([], recording_similarity_index_schema)
 
@@ -32,15 +33,14 @@ def calculate(window_size: int, similarity_threshold: float, time_threshold: int
                   FROM {table}
                  WHERE artist_credit_id IS NOT NULL   
                 WINDOW row_next AS (PARTITION BY user_id ORDER BY listened_at)
-            ), explode_1_mbid AS (  -- cannot explode two columns in 1 step so split into 2.
-                SELECT explode(mbids_0) AS  mbid0
-                     , mbids_1
-                  FROM artist_credit_similarity
-                 WHERE similar  -- trimming the list as soon as possible, no need to explode non-similar artist-mbids
+            ), similar_artist_mbids AS (
+                SELECT mbids_0, mbids_1 FROM artist_credit_similarity WHERE similar
+                -- trimming the list as soon as possible, no need to explode non-similar artist-mbids
+            )
+            , explode_1_mbid AS (  -- cannot explode two columns in 1 step so split into 2.
+                SELECT explode(mbids_0) AS  mbid0 , mbids_1 FROM similar_artist_mbids
             ), mbid_similarity AS (
-                SELECT mbid0
-                     , explode(mbids_1) AS mbid1
-                  FROM explode_1_mbid
+                SELECT mbid0, explode(mbids_1) AS mbid1 FROM explode_1_mbid
             ), symmetric_index AS (
                 SELECT CASE WHEN mbid0 < mbid1 THEN mbid0 ELSE mbid1 END AS lexical_mbid0
                      , CASE WHEN mbid0 > mbid1 THEN mbid0 ELSE mbid1 END AS lexical_mbid1
