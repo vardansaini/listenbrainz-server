@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 def calculate(window_size: int, similarity_threshold: float, time_threshold: int):
     decrement = 1.0 / window_size
 
-    from_date, to_date = datetime(LAST_FM_FOUNDING_YEAR, 1, 1), datetime.now()
+    from_date, to_date = datetime(2019, 1, 1), datetime(2022, 1, 1)
     listens_df = get_listens_from_new_dump(from_date, to_date)
     table = "rec_sim_listens"
     listens_df.createOrReplaceTempView(table)
@@ -65,4 +65,4 @@ def calculate(window_size: int, similarity_threshold: float, time_threshold: int
     """
     rec_sim_index_df = run_query(rec_sim_query)
     logger.info("Index Count: %d", rec_sim_index_df.count())
-    rec_sim_index_df.write.csv(f"/recording_similarity_index/{window_size}/", mode="overwrite")
+    rec_sim_index_df.write.csv("/recording_similarity_index/user_name/", mode="overwrite")
