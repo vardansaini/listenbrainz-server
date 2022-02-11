@@ -32,7 +32,7 @@ def calculate(window_size: int, similarity_threshold: float, time_threshold: int
                      , artist_credit_id != LEAD(artist_credit_id, {idx}) OVER row_next AS similar
                   FROM {table}
                  WHERE artist_credit_id IS NOT NULL   
-                WINDOW row_next AS (PARTITION BY user_id ORDER BY listened_at)
+                WINDOW row_next AS (PARTITION BY user_name ORDER BY listened_at)
             ), similar_artist_mbids AS (
                 SELECT mbids_0, mbids_1 FROM artist_credit_similarity WHERE similar
                 -- trimming the list as soon as possible, no need to explode non-similar artist-mbids
