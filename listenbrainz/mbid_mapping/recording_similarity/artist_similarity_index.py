@@ -70,34 +70,47 @@ def swap_table_and_indexes(conn, table_name):
 
     try:
         with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as curs:
-            curs.execute("DROP TABLE IF EXISTS mapping.%s" % table_name)
+            curs.execute("DROP TABLE IF EXISTS mapping.artist_similarity_%s" % table_name)
             curs.execute("""ALTER TABLE mapping.tmp_artist_similarity
-                            RENAME TO %s""" % table_name)
+                            RENAME TO artist_similarity_%s""" % table_name)
 
             curs.execute("""ALTER INDEX mapping.tmp_artist_similarity_idx_mbid0
-                            RENAME TO %s_idx_mbid0""" % table_name)
+                            RENAME TO artist_similarity_%s_idx_mbid0""" % table_name)
             curs.execute("""ALTER INDEX mapping.tmp_artist_similarity_idx_mbid1
-                            RENAME TO %s_idx_mbid1""" % table_name)
+                            RENAME TO artist_similarity_%s_idx_mbid1""" % table_name)
         conn.commit()
     except OperationalError as err:
         log("artist_similarity: failed to swap in new mbid mapping tables", str(err))
         conn.rollback()
         raise
 
+ 
+def get_mbid_offset(mbid_index, inverse_mbid_index, mbid):
+    try:
+        return mbid_index[mbid.bytes]
+    except KeyError:
+        offset = len(mbid_index)
+        mbid_index[mbid.bytes] = offset
+        inverse_mbid_index[offset] = mbid.bytes
+        return offset
+
+
 def prune(recordings, max_items):
+    return recordings
     return defaultdict(float, { k: recordings[k] for k in sorted(recordings, key=lambda x: recordings[x], reverse=True)[:max_items] })
 
 def build_index(mb_conn, mb_curs, lb_conn, lb_curs, table_name):
 
     row_count = 0
     buffer = []
+
     artist_index = defaultdict(lambda: defaultdict(float))
     decrement = 1.0 / LOOKAHEAD_STEPS
 
-    min_ts = datetime(year=2022, month=2, day=1, hour=0, minute=0)
-    max_ts = datetime(year=2022, month=2, day=5, hour=5, minute=0)
+    min_ts = datetime(year=2022, month=1, day=1, hour=0, minute=0)
+    max_ts = datetime(year=2022, month=1, day=12, hour=0, minute=0)
     query = """    SELECT listened_at
-                        , user_name
+                        , user_id
                         , mm.recording_mbid
                         , m.artist_mbids
                         , m.artist_credit_id
@@ -110,7 +123,7 @@ def build_index(mb_conn, mb_curs, lb_conn, lb_curs, table_name):
                        ON mm.recording_mbid = m.recording_mbid
                     WHERE created >= %s
                       AND created <= %s
-                 ORDER BY user_name, listened_at, mm.recording_mbid"""
+                 ORDER BY user_id, listened_at, mm.recording_mbid"""
 
     log("execute query")
     lb_curs.execute(query, (min_ts, max_ts))
@@ -119,13 +132,10 @@ def build_index(mb_conn, mb_curs, lb_conn, lb_curs, table_name):
 
     log(f"build index: {total_rows:,} rows")
     pairs = 0
-    all_rows = []
     while True:
         row = lb_curs.fetchone()
         if not row:
             break
-
-        all_rows.append(row)
 
         if row["recording_mbid"] is None:
             continue
@@ -135,7 +145,7 @@ def build_index(mb_conn, mb_curs, lb_conn, lb_curs, table_name):
         row_count += 1
 
         # If this is a different user, clear the buffer
-        if len(buffer) > 0 and row["user_name"] != buffer[0]["user_name"]:
+        if len(buffer) > 0 and row["user_id"] != buffer[0]["user_id"]:
             buffer = []
 
         # append the row to the buffer
@@ -153,7 +163,6 @@ def build_index(mb_conn, mb_curs, lb_conn, lb_curs, table_name):
             if rec_mbid0 != rec_mbid1 and buffer[0]["artist_credit_id"] != buffer[i]["artist_credit_id"]:
                 for mbid0 in buffer[0]["artist_mbids"]:
                     for mbid1 in buffer[i]["artist_mbids"]:
-
                         if mbid0 == mbid1:
                             continue
 
@@ -162,12 +171,8 @@ def build_index(mb_conn, mb_curs, lb_conn, lb_curs, table_name):
                         # We've now decided to insert this row, lets tightly encode it
                         if mbid0 < mbid1:
                             artist_index[mbid0][mbid1] += value
-                            if len(artist_index[mbid0]) > MAX_SIMILAR_RECORDINGS_PER_RECORDING * 2:
-                                artist_index[mbid0] = prune(artist_index[mbid0], MAX_SIMILAR_RECORDINGS_PER_RECORDING)
                         else:
                             artist_index[mbid1][mbid0] += value
-                            if len(artist_index[mbid1]) > MAX_SIMILAR_RECORDINGS_PER_RECORDING * 2:
-                                artist_index[mbid1] = prune(artist_index[mbid1], MAX_SIMILAR_RECORDINGS_PER_RECORDING)
  
             value -= decrement
 
@@ -180,10 +185,10 @@ def build_index(mb_conn, mb_curs, lb_conn, lb_curs, table_name):
     for mbid0 in artist_index:
         unique_pairs += len(artist_index[mbid0])
 
-    with open("sim_data.txt", "w") as f:
+    with open("sim_data_%s.txt" % table_name, "w") as f:
         f.write(ujson.dumps(artist_index, indent=2, sort_keys=True))
 
-#    with open("row_data.txt", "w") as f:
+#    with open("row_data_%s.txt" % table_name, "w") as f:
 #        f.write(ujson.dumps(all_rows, indent=2, sort_keys=True))
 
     log(f"Processing complete. Generated {unique_pairs:,} unique pairs from {pairs:,} pairs. Inserting results")
@@ -200,14 +205,14 @@ def build_index(mb_conn, mb_curs, lb_conn, lb_curs, table_name):
                 unique_pairs -= 1
 
             if len(values) == BATCH_SIZE:
-                insert_rows(mb_curs, "mapping.tmp_artist_similarity_%s" % table_name, values, cols=None)
+                insert_rows(mb_curs, "mapping.tmp_artist_similarity", values, cols=None)
                 values = []
                 inserted += BATCH_SIZE
                 if inserted % 1000000 == 0:
-                    log("inserted %s rows, %.1f%%" % (inserted, 100.0 * inserted / count))
+                    log("inserted %s rows, %.1f%%" % (inserted, 100.0 * inserted / unique_pairs))
 
     if len(values) > 0:
-        insert_rows(mb_curs, "mapping.tmp_artist_similarity_%s" % table_name, values, cols=None)
+        insert_rows(mb_curs, "mapping.tmp_artist_similarity", values, cols=None)
         values = []
         inserted += BATCH_SIZE
 
