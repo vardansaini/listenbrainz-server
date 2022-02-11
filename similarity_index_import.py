@@ -13,7 +13,7 @@ from listenbrainz import config
 def import_index(entity: str, size: int):
     with psycopg2.connect(config.MBID_MAPPING_DATABASE_URI) as mb_conn:
         with mb_conn.cursor(cursor_factory=DictCursor) as mb_curs:
-            table = f"mapping.{entity}_similarity_index_{size}"
+            table = f"mapping.{entity}_similarity_index_uid_{size}"
             mb_curs.execute(f"""
                 CREATE TABLE IF NOT EXISTS mapping.{entity}_similarity_index_{size} (
                     mbid0           UUID NOT NULL,
