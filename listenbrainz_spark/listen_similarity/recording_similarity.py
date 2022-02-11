@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 def calculate(window_size: int, similarity_threshold: float, time_threshold: int):
     decrement = 1.0 / window_size
 
-    from_date, to_date = datetime(LAST_FM_FOUNDING_YEAR, 1, 1), datetime.now()
+    from_date, to_date = datetime(2019, 1, 1), datetime(2022, 1, 1)
     listens_df = get_listens_from_new_dump(from_date, to_date)
     table = "rec_sim_listens"
     listens_df.createOrReplaceTempView(table)
@@ -34,6 +34,7 @@ def calculate(window_size: int, similarity_threshold: float, time_threshold: int
                        ) AS similar
                   FROM {table}
                  WHERE recording_mbid IS NOT NULL 
+                   AND user_id != 0
                 WINDOW row_next AS (PARTITION BY user_id ORDER BY listened_at)
             ), symmetric_index AS (
                 SELECT CASE WHEN mbid0 < mbid1 THEN mbid0 ELSE mbid1 END AS lexical_mbid0
@@ -65,4 +66,4 @@ def calculate(window_size: int, similarity_threshold: float, time_threshold: int
     """
     rec_sim_index_df = run_query(rec_sim_query)
     logger.info("Index Count: %d", rec_sim_index_df.count())
-    rec_sim_index_df.write.csv(f"/recording_similarity_index/{window_size}/", mode="overwrite")
+    rec_sim_index_df.write.csv("/recording_similarity_index/user_id/", mode="overwrite")
