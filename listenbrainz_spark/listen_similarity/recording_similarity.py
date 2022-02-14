@@ -35,7 +35,7 @@ def calculate(window_size: int, similarity_threshold: float, time_threshold: int
                   FROM {table}
                  WHERE recording_mbid IS NOT NULL 
                    AND user_id != 0
-                WINDOW row_next AS (PARTITION BY user_id ORDER BY listened_at)
+                WINDOW row_next AS (PARTITION BY user_id ORDER BY listened_at, recording_mbid)
             ), symmetric_index AS (
                 SELECT CASE WHEN mbid0 < mbid1 THEN mbid0 ELSE mbid1 END AS lexical_mbid0
                      , CASE WHEN mbid0 > mbid1 THEN mbid0 ELSE mbid1 END AS lexical_mbid1
