@@ -108,7 +108,7 @@ def build_index(mb_conn, mb_curs, lb_conn, lb_curs, table_name):
     decrement = 1.0 / LOOKAHEAD_STEPS
 
     min_ts = datetime(year=2022, month=1, day=1, hour=0, minute=0)
-    max_ts = datetime(year=2022, month=1, day=12, hour=0, minute=0)
+    max_ts = datetime(year=2022, month=3, day=1, hour=0, minute=0)
     query = """    SELECT listened_at
                         , user_id
                         , mm.recording_mbid
@@ -123,6 +123,7 @@ def build_index(mb_conn, mb_curs, lb_conn, lb_curs, table_name):
                        ON mm.recording_mbid = m.recording_mbid
                     WHERE created >= %s
                       AND created <= %s
+                      AND user_id != 0
                  ORDER BY user_id, listened_at, mm.recording_mbid"""
 
     log("execute query")

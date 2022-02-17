@@ -123,11 +123,12 @@ def create_recording_similarity():
     create_recording_similarity_index()
 
 @cli.command()
-def create_artist_similarity():
+@click.argument('table')
+def create_artist_similarity(table):
     """
         Update the artist_similarity index
     """
-    create_artist_similarity_index()
+    create_artist_similarity_index(table)
 
 def usage(command):
     with click.Context(command) as ctx:
