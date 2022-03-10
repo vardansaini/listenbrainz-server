@@ -202,6 +202,7 @@ def get_best_model(training_data, validation_data, num_validation, ranks, lambda
 
         t0 = time.monotonic()
         logger.info("Training model with model id: {}".format(model_id))
+        logger.info(f"Rank: {rank}, Lambda: {lmbda}, Iteration: {iteration}, Alpha: {alpha}")
         model = train(training_data, rank, iteration, lmbda, alpha, model_id)
         logger.info("Model trained!")
         mt = '{:.2f}'.format((time.monotonic() - t0) / 60)
@@ -370,6 +371,7 @@ def main(ranks=None, lambdas=None, iterations=None, alpha=None):
     models_training_time = '{:.2f}'.format((time.monotonic() - t0) / 3600)
 
     best_model_metadata = get_best_model_metadata(best_model)
+    logger.info(f"Best Model Params: {best_model_metadata}")
     logger.info("Calculating test RMSE for best model with model id: {}".format(best_model.model_id))
     best_model_metadata['test_rmse'] = compute_rmse(best_model.model, test_data, num_test, best_model.model_id)
     logger.info("Test RMSE calculated!")
