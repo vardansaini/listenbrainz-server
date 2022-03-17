@@ -337,7 +337,7 @@ export default class LastFmImporter extends React.Component<
 
       if (payload) {
         // Submit only if response is valid
-        this.submitPage(payload);
+        await this.submitPage(payload); // eslint-disable-line
         this.lastImportedString = LastFmImporter.getlastImportedString(
           payload[0]
         );
