@@ -1,17 +1,17 @@
 from brainzutils.ratelimit import ratelimit
 from flask import Blueprint, request, jsonify, current_app
 
-import listenbrainz.db.user as db_user
 from listenbrainz.db.metadata import get_metadata_for_recording
+from listenbrainz.mbid_mapping_writer.matcher import lookup_listens
 from listenbrainz.webserver.decorators import crossdomain
-from listenbrainz.webserver.views.api_tools import is_valid_uuid
 from listenbrainz.webserver.errors import APIBadRequest
+from listenbrainz.webserver.views.api_tools import is_valid_uuid
 
 metadata_bp = Blueprint('metadata', __name__)
 
 
 @metadata_bp.route("/recording/", methods=["GET", "OPTIONS"])
-@crossdomain(headers="Authorization, Content-Type")
+@crossdomain
 @ratelimit()
 def metadata_recording():
     """
@@ -31,7 +31,7 @@ def metadata_recording():
 
     recordings = request.args.get("recording_mbids", default=None)
     if recordings is None:
-        raise BadRequest("recording_mbids argument must be present and contain a comma separated list of recording_mbids")
+        raise APIBadRequest("recording_mbids argument must be present and contain a comma separated list of recording_mbids")
 
     incs = request.args.get("inc", default="")
     incs = incs.split()
@@ -60,3 +60,40 @@ def metadata_recording():
         result[str(entry.recording_mbid)] = data
 
     return jsonify(result)
+
+
+@metadata_bp.route("/lookup", methods=["GET", "OPTIONS"])
+def get_mbid_mapping():
+    """
+    This endpoint looks up mbid metadata for the given artist and recording name.
+
+    :param artist_name: artist name of the listen
+    :type artist_name: ``str``
+    :param recording_name: track name of the listen
+    :type artist_name: ``str``
+    :statuscode 200: lookup succeeded, does not indicate match found or not
+    :statuscode 400: invalid arguments
+    """
+    artist_name = request.args.get("artist_name")
+    recording_name = request.args.get("recording_name")
+    if not artist_name:
+        raise APIBadRequest("artist_name is invalid or not present in arguments")
+    if not recording_name:
+        raise APIBadRequest("recording_name is invalid or not present in arguments")
+
+    listen = {
+        "data": {
+            "artist_name": artist_name,
+            "track_name": recording_name
+        }
+    }
+
+    exact_lookup, _, _ = lookup_listens(current_app, [listen], {}, True, False)
+    if exact_lookup:
+        return jsonify(exact_lookup)
+
+    fuzzy_lookup, _, _ = lookup_listens(current_app, [listen], {}, False, False)
+    if fuzzy_lookup:
+        return jsonify(fuzzy_lookup)
+
+    return jsonify({})
