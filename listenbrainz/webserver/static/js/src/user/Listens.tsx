@@ -252,7 +252,9 @@ export default class Listens extends React.Component<
         artist_name,
         track_name
       );
-      track_metadata.mbid_mapping = JSON.parse(more_metadata);
+      // eslint-disable-next-line no-console
+      console.log(more_metadata);
+      track_metadata.mbid_mapping = more_metadata;
     }
 
     this.setState({
