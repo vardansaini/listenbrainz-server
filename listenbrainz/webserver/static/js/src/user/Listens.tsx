@@ -241,9 +241,19 @@ export default class Listens extends React.Component<
     }
   };
 
-  receiveNewPlayingNow = (newPlayingNow: string): void => {
+  receiveNewPlayingNow = async (newPlayingNow: string): Promise<void> => {
     const playingNow = JSON.parse(newPlayingNow) as Listen;
     playingNow.playing_now = true;
+
+    if (!playingNow.track_metadata?.recording_mbid) {
+      const { track_metadata } = playingNow;
+      const { artist_name, track_name } = track_metadata;
+      const more_metadata = await this.APIService.getMbidMappingMetadata(
+        artist_name,
+        track_name
+      );
+      track_metadata.mbid_mapping = JSON.parse(more_metadata);
+    }
 
     this.setState({
       playingNowListen: playingNow,
