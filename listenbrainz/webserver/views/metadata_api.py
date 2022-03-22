@@ -4,6 +4,8 @@ from brainzutils.ratelimit import ratelimit
 from flask import Blueprint, request, jsonify, current_app
 
 from listenbrainz.db.metadata import get_metadata_for_recording
+from listenbrainz.labs_api.labs.api.artist_credit_recording_lookup import ArtistCreditRecordingLookupQuery
+from listenbrainz.labs_api.labs.api.mbid_mapping import MBIDMappingQuery
 from listenbrainz.mbid_mapping_writer.matcher import lookup_listens
 from listenbrainz.webserver.decorators import crossdomain
 from listenbrainz.webserver.errors import APIBadRequest
@@ -84,20 +86,21 @@ def get_mbid_mapping():
         raise APIBadRequest("artist_name is invalid or not present in arguments")
     if not recording_name:
         raise APIBadRequest("recording_name is invalid or not present in arguments")
-
-    listen = {
-        "data": {
-            "artist_name": artist_name,
-            "track_name": recording_name
+    params = [
+        {
+            "[artist_credit_name]": artist_name,
+            "[recording_name]": recording_name
         }
-    }
+    ]
 
-    exact_lookup, _, _ = lookup_listens(current_app, [listen], defaultdict(int), True, False)
-    if exact_lookup:
-        return jsonify(exact_lookup)
+    q = ArtistCreditRecordingLookupQuery(debug=False)
+    result = q.fetch(params)
+    if result:
+        return jsonify(result)
 
-    fuzzy_lookup, _, _ = lookup_listens(current_app, [listen], defaultdict(int), False, False)
-    if fuzzy_lookup:
-        return jsonify(fuzzy_lookup)
+    q = MBIDMappingQuery(timeout=10, remove_stop_words=True, debug=False)
+    result = q.fetch(params)
+    if result:
+        return jsonify(result)
 
     return jsonify({})
