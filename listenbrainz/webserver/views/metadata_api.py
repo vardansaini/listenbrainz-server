@@ -9,9 +9,35 @@ from listenbrainz.labs_api.labs.api.mbid_mapping import MBIDMappingQuery
 from listenbrainz.mbid_mapping_writer.matcher import lookup_listens
 from listenbrainz.webserver.decorators import crossdomain
 from listenbrainz.webserver.errors import APIBadRequest
+from listenbrainz.webserver.utils import parse_boolean_arg
 from listenbrainz.webserver.views.api_tools import is_valid_uuid
 
 metadata_bp = Blueprint('metadata', __name__)
+
+
+def parse_incs():
+    allowed_incs = ("artist", "tag")
+    incs = request.args.get("inc", default="")
+    incs = incs.split()
+    for inc in incs:
+        if inc not in allowed_incs:
+            raise APIBadRequest("invalid inc argument '%s'. Must be one of %s." % (inc, ",".join(allowed_incs)))
+    return incs
+
+
+def fetch_metadata(recording_mbids, incs):
+    metadata = get_metadata_for_recording(recording_mbids)
+    result = {}
+    for entry in metadata:
+        data = {"recording": entry.recording_data}
+        if "artist" in incs:
+            data["artist"] = entry.artist_data
+
+        if "tag" in incs:
+            data["tag"] = entry.tag_data
+
+        result[str(entry.recording_mbid)] = data
+    return result
 
 
 @metadata_bp.route("/recording/", methods=["GET", "OPTIONS"])
@@ -23,25 +49,20 @@ def metadata_recording():
     recording metadata suitable for showing in a context that requires as much detail about
     a recording and the artist.
 
-    TODO: Add a sample entry and document inc argument
+    TODO: Add a sample entry
 
     :param recording_mbids: A comma separated list of recording_mbids
     :type recording_mbids: ``str``
-    :statuscode 200: playlist generated
-    :statuscode 400: invalid recording_mbid arguments
+    :param incs: comma separated of additional attribute that should be also returned
+    :type incs: ``str``
+    :statuscode 200: metadata successfully fetched
+    :statuscode 400: invalid recording_mbid or inc arguments
     """
-
-    allowed_incs = ("artist", "tag")
+    incs = parse_incs()
 
     recordings = request.args.get("recording_mbids", default=None)
     if recordings is None:
         raise APIBadRequest("recording_mbids argument must be present and contain a comma separated list of recording_mbids")
-
-    incs = request.args.get("inc", default="")
-    incs = incs.split()
-    for inc in incs:
-        if inc not in allowed_incs:
-            raise APIBadRequest("invalid inc argument '%s'. Must be one of %s." % (inc, ",".join(allowed_incs)))
 
     recording_mbids = []
     for mbid in recordings.split(","):
@@ -51,19 +72,25 @@ def metadata_recording():
 
         recording_mbids.append(mbid_clean)
 
-    metadata = get_metadata_for_recording(recording_mbids)
-    result = {}
-    for entry in metadata:
-        data = { "recording": entry.recording_data }
-        if "artist" in incs:
-            data["artist"] = entry.artist_data
-
-        if "tag" in incs:
-            data["tag"] = entry.tag_data
-
-        result[str(entry.recording_mbid)] = data
-
+    result = fetch_metadata(recording_mbids, incs)
     return jsonify(result)
+
+
+def process_results(match, metadata, incs):
+    recording_mbid = match["recording_mbid"]
+    result = {
+        "recording_mbid": recording_mbid,
+        "release_mbid": match["release_mbid"],
+        "artist_mbids": match["artist_mbids"],
+        "artist_credit_id": match["artist_credit_id"],
+        "recording_name": match["recording_name"],
+        "release_name": match["release_name"],
+        "artist_credit_name": match["artist_credit_name"]
+    }
+    if metadata:
+        extras = get_metadata_for_recording([recording_mbid])
+        result["metadata"] = extras[recording_mbid]
+    return result
 
 
 @metadata_bp.route("/lookup", methods=["GET", "OPTIONS"])
@@ -77,7 +104,12 @@ def get_mbid_mapping():
     :type artist_name: ``str``
     :param recording_name: track name of the listen
     :type artist_name: ``str``
-    :statuscode 200: lookup succeeded, does not indicate match found or not
+    :param metadata: should extra metadata be also returned if a match is found,
+                     see /metadata/recording for details.
+    :type metadata: ``bool``
+    :param incs: same as /metadata/recording endpoint
+    :type incs: ``str``
+    :statuscode 200: lookup succeeded, does not indicate whether a match was found or not
     :statuscode 400: invalid arguments
     """
     artist_name = request.args.get("artist_name")
@@ -86,6 +118,10 @@ def get_mbid_mapping():
         raise APIBadRequest("artist_name is invalid or not present in arguments")
     if not recording_name:
         raise APIBadRequest("recording_name is invalid or not present in arguments")
+
+    metadata = parse_boolean_arg("metadata")
+    incs = parse_incs() if metadata else []
+
     params = [
         {
             "[artist_credit_name]": artist_name,
@@ -93,14 +129,14 @@ def get_mbid_mapping():
         }
     ]
 
-    # q = ArtistCreditRecordingLookupQuery(debug=False)
-    # result = q.fetch(params)
-    # if result:
-    #     return jsonify(result)
+    q = ArtistCreditRecordingLookupQuery(debug=False)
+    result = q.fetch(params)
+    if result:
+        return process_results(result[0], metadata, incs)
 
     q = MBIDMappingQuery(timeout=10, remove_stop_words=True, debug=False)
     result = q.fetch(params)
     if result:
-        return jsonify(result)
+        return process_results(result[0], metadata, incs)
 
     return jsonify({})
