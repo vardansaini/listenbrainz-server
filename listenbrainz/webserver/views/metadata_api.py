@@ -18,10 +18,10 @@ metadata_bp = Blueprint('metadata', __name__)
 def parse_incs():
     allowed_incs = ("artist", "tag")
     incs = request.args.get("inc", default="")
-    incs = incs.split()
+    incs = incs.split(",")
     for inc in incs:
         if inc not in allowed_incs:
-            raise APIBadRequest("invalid inc argument '%s'. Must be one of %s." % (inc, ",".join(allowed_incs)))
+            raise APIBadRequest("invalid inc argument '%s'. Must be one of %s." % (inc, ", ".join(allowed_incs)))
     return incs
 
 
@@ -53,8 +53,8 @@ def metadata_recording():
 
     :param recording_mbids: A comma separated list of recording_mbids
     :type recording_mbids: ``str``
-    :param incs: comma separated of additional attribute that should be also returned
-    :type incs: ``str``
+    :param inc: comma separated of additional attribute that should be also returned
+    :type inc: ``str``
     :statuscode 200: metadata successfully fetched
     :statuscode 400: invalid recording_mbid or inc arguments
     """
@@ -82,7 +82,6 @@ def process_results(match, metadata, incs):
         "recording_mbid": recording_mbid,
         "release_mbid": match["release_mbid"],
         "artist_mbids": match["artist_mbids"],
-        "artist_credit_id": match["artist_credit_id"],
         "recording_name": match["recording_name"],
         "release_name": match["release_name"],
         "artist_credit_name": match["artist_credit_name"]
@@ -107,8 +106,8 @@ def get_mbid_mapping():
     :param metadata: should extra metadata be also returned if a match is found,
                      see /metadata/recording for details.
     :type metadata: ``bool``
-    :param incs: same as /metadata/recording endpoint
-    :type incs: ``str``
+    :param inc: same as /metadata/recording endpoint
+    :type inc: ``str``
     :statuscode 200: lookup succeeded, does not indicate whether a match was found or not
     :statuscode 400: invalid arguments
     """
