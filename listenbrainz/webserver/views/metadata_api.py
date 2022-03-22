@@ -88,8 +88,8 @@ def process_results(match, metadata, incs):
         "artist_credit_name": match["artist_credit_name"]
     }
     if metadata:
-        extras = get_metadata_for_recording([recording_mbid])
-        result["metadata"] = extras[recording_mbid]
+        extras = fetch_metadata([recording_mbid], incs)
+        result["metadata"] = extras.get(recording_mbid, {})
     return result
 
 
