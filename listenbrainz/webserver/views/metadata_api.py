@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from brainzutils.ratelimit import ratelimit
 from flask import Blueprint, request, jsonify, current_app
 
@@ -90,11 +92,11 @@ def get_mbid_mapping():
         }
     }
 
-    exact_lookup, _, _ = lookup_listens(current_app, [listen], {}, True, False)
+    exact_lookup, _, _ = lookup_listens(current_app, [listen], defaultdict(int), True, False)
     if exact_lookup:
         return jsonify(exact_lookup)
 
-    fuzzy_lookup, _, _ = lookup_listens(current_app, [listen], {}, False, False)
+    fuzzy_lookup, _, _ = lookup_listens(current_app, [listen], defaultdict(int), False, False)
     if fuzzy_lookup:
         return jsonify(fuzzy_lookup)
 
