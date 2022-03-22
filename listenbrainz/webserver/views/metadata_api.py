@@ -93,10 +93,10 @@ def get_mbid_mapping():
         }
     ]
 
-    q = ArtistCreditRecordingLookupQuery(debug=False)
-    result = q.fetch(params)
-    if result:
-        return jsonify(result)
+    # q = ArtistCreditRecordingLookupQuery(debug=False)
+    # result = q.fetch(params)
+    # if result:
+    #     return jsonify(result)
 
     q = MBIDMappingQuery(timeout=10, remove_stop_words=True, debug=False)
     result = q.fetch(params)
