@@ -63,6 +63,8 @@ def metadata_recording():
 
 
 @metadata_bp.route("/lookup", methods=["GET", "OPTIONS"])
+@crossdomain
+@ratelimit()
 def get_mbid_mapping():
     """
     This endpoint looks up mbid metadata for the given artist and recording name.
