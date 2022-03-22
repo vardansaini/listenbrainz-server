@@ -17,11 +17,16 @@ metadata_bp = Blueprint('metadata', __name__)
 
 def parse_incs():
     allowed_incs = ("artist", "tag")
-    incs = request.args.get("inc", default="")
+
+    incs = request.args.get("inc")
+    if not incs:
+        return []
+
     incs = incs.split(",")
     for inc in incs:
         if inc not in allowed_incs:
             raise APIBadRequest("invalid inc argument '%s'. Must be one of %s." % (inc, ", ".join(allowed_incs)))
+
     return incs
 
 
