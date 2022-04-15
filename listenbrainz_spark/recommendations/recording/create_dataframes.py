@@ -31,6 +31,8 @@ import logging
 import time
 from datetime import datetime
 from collections import defaultdict
+
+import pyspark.sql
 from pydantic import ValidationError
 
 import listenbrainz_spark
@@ -165,10 +167,12 @@ def save_playcounts_df(listens_df, recordings_df, users_df, metadata, save_path)
     # The output is then joined with recording_df on recording_mbid.
     # The final step uses groupBy which create groups on spark_user_id and recording_id and counts the number of recording_ids.
     # The final dataframe tells us about the number of times a user has listend to a particular track for all users.
-    playcounts_df = listens_df.join(users_df, 'user_id', 'inner') \
+    playcounts_df: pyspark.sql.DataFrame = listens_df.join(users_df, 'user_id', 'inner') \
                               .join(recordings_df, 'recording_mbid', 'inner') \
                               .groupBy('spark_user_id', 'recording_id') \
-                              .agg(func.count('recording_id').alias('count'))
+                              .agg(func.count('recording_id').alias('play_count'))\
+                              .withColumn('count', func.log(1 + col('play_count') / 1e-8)) \
+                              .select('spark_user_id', 'recording_id', 'count')
 
     metadata['playcounts_count'] = playcounts_df.count()
     save_dataframe(playcounts_df, save_path)
