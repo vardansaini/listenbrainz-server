@@ -31,6 +31,7 @@ NUMBER_OF_RECENT_LISTENS = 50
 
 SEARCH_USER_LIMIT = 100  # max number of users to return in search username results
 
+
 @index_bp.route("/")
 def index():
     if _ts:
@@ -104,7 +105,7 @@ def current_status():
     listen_count = _ts.get_total_listen_count()
     try:
         user_count = format(int(_get_user_count()), ',d')
-    except DatabaseException as e:
+    except DatabaseException:
         user_count = 'Unknown'
 
     listen_counts_per_day: List[dict] = []
@@ -112,7 +113,7 @@ def current_status():
         try:
             day = datetime.utcnow() - relativedelta(days=delta)
             day_listen_count = _redis.get_listen_count_for_day(day)
-        except:
+        except Exception:
             current_app.logger.error("Could not get %s listen count from redis", day.strftime('%Y-%m-%d'), exc_info=True)
             day_listen_count = None
         listen_counts_per_day.append({
@@ -250,10 +251,7 @@ def _get_user_count():
     if user_count:
         return user_count
     else:
-        try:
-            user_count = db_user.get_user_count()
-        except DatabaseException as e:
-            raise
+        user_count = db_user.get_user_count()
         cache.set(user_count_key, int(user_count), CACHE_TIME, encode=False)
         return user_count
 

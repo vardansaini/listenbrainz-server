@@ -1,19 +1,14 @@
-import logging
-from typing import List, Optional
-
-import sqlalchemy
 import uuid
-import ujson
-
 from datetime import datetime
-from listenbrainz import db
-from listenbrainz.db.exceptions import DatabaseException
-from data.model.similar_user_model import SimilarUsers
+from typing import Optional
 from typing import Tuple, List
 
+import sqlalchemy
+from flask import current_app
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+from data.model.similar_user_model import SimilarUsers
+from listenbrainz import db
+from listenbrainz.db.exceptions import DatabaseException
 
 
 def create(musicbrainz_row_id: int, musicbrainz_id: str, email: str = None) -> int:
@@ -59,7 +54,7 @@ def update_token(id):
                 "id": id
             })
         except DatabaseException as e:
-            logger.error(e)
+            current_app.logger.error(e)
             raise
 
 
@@ -222,9 +217,6 @@ def get_user_count():
             """))
             row = result.fetchone()
             return row['user_count']
-        except DatabaseException as e:
-            logger.error(e)
-            raise
 
 
 def get_or_create(musicbrainz_row_id: int, musicbrainz_id: str) -> dict:
@@ -267,9 +259,8 @@ def update_last_login(musicbrainz_id):
                 "musicbrainz_id": musicbrainz_id,
             })
         except sqlalchemy.exc.ProgrammingError as err:
-            logger.error(err)
-            raise DatabaseException(
-                "Couldn't update last_login: %s" % str(err))
+            current_app.logger.error(err)
+            raise DatabaseException("Couldn't update last_login: %s" % str(err))
 
 
 def get_all_users(created_before=None, columns=None):
@@ -329,7 +320,7 @@ def delete(id):
                 'id': id,
             })
         except sqlalchemy.exc.ProgrammingError as err:
-            logger.error(err)
+            current_app.logger.error(err)
             raise DatabaseException("Couldn't delete user: %s" % str(err))
 
 
@@ -349,33 +340,8 @@ def agree_to_gdpr(musicbrainz_id):
                 'mb_id': musicbrainz_id,
             })
         except sqlalchemy.exc.ProgrammingError as err:
-            logger.error(err)
-            raise DatabaseException(
-                "Couldn't update gdpr agreement for user: %s" % str(err))
-
-
-def update_musicbrainz_row_id(musicbrainz_id, musicbrainz_row_id):
-    """ Update the musicbrainz_row_id column for user with specified MusicBrainz username.
-
-    Args:
-        musicbrainz_id (str): the MusicBrainz ID (username) of the user
-        musicbrainz_row_id (int): the MusicBrainz row ID of the user
-    """
-    with db.engine.connect() as connection:
-        try:
-            connection.execute(sqlalchemy.text("""
-                UPDATE "user"
-                   SET musicbrainz_row_id = :musicbrainz_row_id
-                 WHERE LOWER(musicbrainz_id) = LOWER(:mb_id)
-                """), {
-                'musicbrainz_row_id': musicbrainz_row_id,
-                'mb_id': musicbrainz_id,
-            })
-        except sqlalchemy.exc.ProgrammingError as err:
-            logger.error(err)
-            raise DatabaseException(
-                "Couldn't update musicbrainz row id for user: %s" % str(err))
-
+            current_app.logger.error(err)
+            raise DatabaseException("Couldn't update gdpr agreement for user: %s" % str(err))
 
 def get_by_mb_row_id(musicbrainz_row_id, musicbrainz_id=None):
     """ Get user with specified MusicBrainz row id.
@@ -534,9 +500,8 @@ def update_user_details(lb_id: int, musicbrainz_id: str, email: str):
                 "email": email
             })
         except sqlalchemy.exc.ProgrammingError as err:
-            logger.error(err)
-            raise DatabaseException(
-                "Couldn't update user's email: %s" % str(err))
+            current_app.logger.error(err)
+            raise DatabaseException("Couldn't update user's email: %s" % str(err))
 
 
 def search(search_term: str, limit: int, searcher_id: int = None) -> List[Tuple[str, float, float]]:
