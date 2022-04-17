@@ -208,15 +208,13 @@ def get_user_count():
     Returns:
         int: user count
     """
-
     with db.engine.connect() as connection:
-        try:
-            result = connection.execute(sqlalchemy.text("""
-                SELECT count(*) AS user_count
-                  FROM "user"
-            """))
-            row = result.fetchone()
-            return row['user_count']
+        result = connection.execute(sqlalchemy.text("""
+            SELECT count(*) AS user_count
+              FROM "user"
+        """))
+        row = result.fetchone()
+        return row['user_count']
 
 
 def get_or_create(musicbrainz_row_id: int, musicbrainz_id: str) -> dict:
