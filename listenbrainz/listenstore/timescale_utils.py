@@ -1,16 +1,14 @@
-import logging
 import subprocess
 from datetime import datetime
 
 import psycopg2
 import sqlalchemy
+from flask import current_app
 from psycopg2.extras import execute_values
 from sqlalchemy import text
 
 from listenbrainz import db
 from listenbrainz.db import timescale
-
-logger = logging.getLogger(__name__)
 
 SECONDS_IN_A_YEAR = 31536000
 
@@ -197,25 +195,25 @@ def delete_listens():
         row = result.fetchone()
 
         if not row:
-            logger.info("No pending deletes")
+            current_app.logger.info("No pending deletes")
             return
 
         max_id = row["max_id"]
-        logger.info("Found max id in listen_delete_metadata table: %d", max_id)
+        current_app.logger.info("Found max id in listen_delete_metadata table: %d", max_id)
 
-        logger.info("Deleting Listens and updating affected listens counts")
+        current_app.logger.info("Deleting Listens and updating affected listens counts")
         connection.execute(text(delete_listens_and_update_listen_counts), max_id=max_id)
 
-        logger.info("Update minimum listen timestamp affected by deleted listens")
+        current_app.logger.info("Update minimum listen timestamp affected by deleted listens")
         connection.execute(text(update_listen_min_ts), max_id=max_id)
 
-        logger.info("Update maximum listen timestamp affected by deleted listens")
+        current_app.logger.info("Update maximum listen timestamp affected by deleted listens")
         connection.execute(text(update_listen_max_ts), max_id=max_id)
 
-        logger.info("Clean up listen delete metadata table")
+        current_app.logger.info("Clean up listen delete metadata table")
         connection.execute(text(delete_user_metadata), max_id=max_id)
 
-        logger.info("Completed deleting listens and updating affected metadata")
+        current_app.logger.info("Completed deleting listens and updating affected metadata")
 
 
 def update_user_listen_data():
@@ -246,9 +244,9 @@ def update_user_listen_data():
     # it makes sense that we need begin for an explicit transaction but how CRUD statements work fine with connect
     # in remaining LB is beyond me then.
     with timescale.engine.begin() as connection:
-        logger.info("Starting to update listen counts")
+        current_app.logger.info("Starting to update listen counts")
         connection.execute(text(query), until=datetime.now())
-        logger.info("Completed updating listen counts")
+        current_app.logger.info("Completed updating listen counts")
 
 
 def delete_listens_and_update_user_listen_data():
@@ -268,11 +266,11 @@ def add_missing_to_listen_users_metadata():
             for row in result:
                 user_list.append(row[0])
     except psycopg2.OperationalError as e:
-        logger.error("Cannot query db to fetch user list." %
+        current_app.logger.error("Cannot query db to fetch user list." %
                      str(e), exc_info=True)
         raise
 
-    logger.info("Fetched %d users. Setting empty cache entries." %
+    current_app.logger.info("Fetched %d users. Setting empty cache entries." %
                 len(user_list))
 
     query = """
@@ -290,7 +288,7 @@ def add_missing_to_listen_users_metadata():
         connection.commit()
     except psycopg2.errors.OperationalError:
         connection.rollback()
-        logger.error("Error while resetting created timestamps:", exc_info=True)
+        current_app.logger.error("Error while resetting created timestamps:", exc_info=True)
         raise
 
 
@@ -302,10 +300,10 @@ def recalculate_all_user_data():
             result = connection.execute(sqlalchemy.text(query))
             user_list = [row["id"] for row in result]
     except psycopg2.OperationalError:
-        logger.error("Cannot query db to fetch user list", exc_info=True)
+        current_app.logger.error("Cannot query db to fetch user list", exc_info=True)
         raise
 
-    logger.info("Fetched %d users. Resetting created timestamps for all users.", len(user_list))
+    current_app.logger.info("Fetched %d users. Resetting created timestamps for all users.", len(user_list))
 
     query = """
         INSERT INTO listen_user_metadata (user_id, count, min_listened_at, max_listened_at, created)
@@ -326,13 +324,13 @@ def recalculate_all_user_data():
         connection.commit()
     except psycopg2.errors.OperationalError:
         connection.rollback()
-        logger.error("Error while resetting created timestamps:", exc_info=True)
+        current_app.logger.error("Error while resetting created timestamps:", exc_info=True)
         raise
 
     try:
         update_user_listen_data()
     except psycopg2.OperationalError as e:
-        logger.error("Cannot update user data:", exc_info=True)
+        current_app.logger.error("Cannot update user data:", exc_info=True)
         raise
 
 
@@ -343,7 +341,7 @@ def unlock_cron():
     try:
         subprocess.run(["/usr/local/bin/python", "admin/cron_lock.py", "unlock-cron", "cont-agg"])
     except subprocess.CalledProcessError as err:
-        logger.error("Cannot unlock cron after updating continuous aggregates: %s" % str(err))
+        current_app.logger.error("Cannot unlock cron after updating continuous aggregates: %s" % str(err))
 
 
 class TimescaleListenStoreException(Exception):
