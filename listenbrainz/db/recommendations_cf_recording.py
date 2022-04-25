@@ -88,13 +88,66 @@ def get_user_recommendation(user_id):
     """
     with db.engine.connect() as connection:
         result = connection.execute(sqlalchemy.text("""
-            SELECT user_id, recording_mbid, created
-              FROM recommendation.cf_recording
-             WHERE user_id = :user_id
-            """), {
-                    'user_id': user_id
-                }
-        )
+            WITH recommendations AS (
+                SELECT user_id
+                     , created
+                     , recording_mbid ->> 'model_id' AS model_id
+                     , recording_mbid ->> 'model_url' AS model_url
+                     , recording_mbid -> 'similar_artist' AS similar_recs
+                     , recording_mbid -> 'top_artist' AS top_recs
+                  FROM recommendation.cf_recording
+                 WHERE user_id = :user_id 
+            ), similar_recs_expand AS (
+                SELECT jsonb_agg(
+                            jsonb_build_object(
+                                'recording_mbid'
+                              , t.recording_mbid
+                              , 'score'
+                              , t.score
+                              , 'latest_listened_at'
+                              , rd.latest_listened_at
+                            )
+                            ORDER BY t.score DESC
+                        ) AS recs
+                  FROM recommendations
+                     , jsonb_to_recordset(recommendations.similar_recs) AS t(score FLOAT, recording_mbid UUID)
+             LEFT JOIN statistics.recording_discovery rd
+                    ON t.recording_mbid = rd.recording_mbid
+                 WHERE rd.user_id = :user_id
+            ), top_recs_expand AS (
+                SELECT jsonb_agg(
+                            jsonb_build_object(
+                                'recording_mbid'
+                              , t.recording_mbid
+                              , 'score'
+                              , t.score
+                              , 'latest_listened_at'
+                              , rd.latest_listened_at
+                            )
+                            ORDER BY t.score DESC
+                        ) AS recs
+                  FROM recommendations
+                     , jsonb_to_recordset(recommendations.top_recs) AS t(score FLOAT, recording_mbid UUID)
+             LEFT JOIN statistics.recording_discovery rd
+                    ON t.recording_mbid = rd.recording_mbid
+                 WHERE rd.user_id = :user_id
+            )
+            SELECT user_id
+                 , created
+                 , jsonb_build_object(
+                        'model_id'
+                       , model_id
+                       , 'model_url'
+                       , model_url
+                       , 'similar_artist'
+                       , similar_recs_expand.recs
+                       , 'top_artist'
+                       , top_recs_expand.recs
+                 ) AS recording_mbid
+              FROM recommendations
+              JOIN similar_recs_expand ON TRUE
+              JOIN top_recs_expand ON TRUE
+            """), user_id=user_id)
         row = result.fetchone()
 
     try:
