@@ -83,8 +83,7 @@ def _get_template(active_section, user):
 
     recommendations = _get_playable_recommendations_list(result)
     if not recommendations:
-        current_app.logger.error('The API returned an empty response for {} recommendations.\nData: {}'
-                                 .format(active_section, result))
+        current_app.logger.error('The API returned an empty response for %s recommendations.', active_section)
         return render_template(
             "recommendations_cf_recording/{}.html".format(active_section),
             active_section=active_section,
@@ -139,6 +138,8 @@ def _get_playable_recommendations_list(mbids_and_ratings_list):
     for recommendation in mbids_and_ratings_list:
         mbid = recommendation['recording_mbid']
         if mbid not in data:
+            current_app.logger.info("MBID %s not found in fetched data", mbid)
+            current_app.logger.info("Data: %s", recommendation)
             continue
         row = data[mbid]
         recommendations.append({
