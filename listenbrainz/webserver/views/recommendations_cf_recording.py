@@ -133,7 +133,7 @@ def _get_playable_recommendations_list(mbids_and_ratings_list):
                 }
     """
     data = load_recordings_from_mapping(mbids=[r['recording_mbid'] for r in mbids_and_ratings_list], msids=[])
-
+    current_app.logger.info("Data: %s", data)
     recommendations = []
 
     for recommendation in mbids_and_ratings_list:
