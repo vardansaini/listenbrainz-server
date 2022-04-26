@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import ujson
 import requests
 
@@ -140,7 +142,7 @@ def _get_playable_recommendations_list(mbids_and_ratings_list):
             continue
         row = data[mbid]
         recommendations.append({
-            'listened_at': recommendation['latest_listened_at'],
+            'listened_at': int(datetime.fromisoformat(recommendation['latest_listened_at']).timestamp()),
             'track_metadata': {
                 'artist_name': row['artist'],
                 'track_name': row['title'],
