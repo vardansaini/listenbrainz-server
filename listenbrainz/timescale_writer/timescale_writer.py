@@ -69,9 +69,12 @@ class TimescaleWriterSubscriber:
             sys.exit(-1)
 
     def callback(self, ch, method, properties, body):
-        current_app.logger.info("Entered callback")
         listens = ujson.loads(body)
         current_app.logger.info("Number of Listens: %s", len(listens))
+
+        if len(listens) == 69031 and listens[0]["user_id"] == 15661:
+            current_app.logger.info("Acking that pesky message")
+            self.incoming_ch.basic_ack(delivery_tag=method.delivery_tag)
 
         current_app.logger.info("Loaded as JSON")
 
