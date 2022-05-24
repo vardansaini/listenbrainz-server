@@ -75,6 +75,7 @@ class TimescaleWriterSubscriber:
         if len(listens) == 69031 and listens[0]["user_id"] == 15661:
             current_app.logger.info("Acking that pesky message")
             self.incoming_ch.basic_ack(delivery_tag=method.delivery_tag)
+            return 0
 
         current_app.logger.info("Loaded as JSON")
 
