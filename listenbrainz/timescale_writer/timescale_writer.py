@@ -72,7 +72,7 @@ class TimescaleWriterSubscriber:
         listens = ujson.loads(body)
         current_app.logger.info("Number of Listens: %s", len(listens))
 
-        if len(listens) == 69031 and listens[0]["user_id"] == 15661:
+        if len(listens) > 50000 and listens[0]["user_id"] == 15661:
             current_app.logger.info("Acking that pesky message")
             self.incoming_ch.basic_ack(delivery_tag=method.delivery_tag)
             return 0
